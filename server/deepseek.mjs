@@ -6,7 +6,8 @@ const PORT = Number(process.env.PORT || process.env.DEEPSEEK_PORT || 8787);
 const HOST = process.env.HOST || process.env.DEEPSEEK_HOST || "0.0.0.0";
 const BASE_URL = (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/$/, "");
 const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
-const API_KEY = process.env.DEEPSEEK_API_KEY;
+const RAW_API_KEY = process.env.DEEPSEEK_API_KEY || "";
+const API_KEY = RAW_API_KEY.trim();
 const REQUEST_LIMIT = 1_000_000;
 const MAX_HISTORY = 12;
 const DIST_DIR = resolve(process.cwd(), "dist");
@@ -37,6 +38,10 @@ function sendJson(response, statusCode, payload) {
     "Cache-Control": "no-store",
   });
   response.end(JSON.stringify(payload));
+}
+
+function isAsciiHeaderValue(value) {
+  return /^[\x20-\x7E]+$/.test(value);
 }
 
 function readBody(request) {
@@ -72,6 +77,13 @@ function normalizeMessages(messages) {
 async function handleChat(request, response) {
   if (!API_KEY) {
     sendJson(response, 500, { error: "Missing DEEPSEEK_API_KEY on the backend server." });
+    return;
+  }
+
+  if (!isAsciiHeaderValue(API_KEY)) {
+    sendJson(response, 500, {
+      error: "DEEPSEEK_API_KEY contains non-ASCII characters. Re-enter the raw sk-* key only, without Chinese text, quotes, spaces, or line breaks.",
+    });
     return;
   }
 
@@ -159,7 +171,12 @@ const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://${request.headers.host || `${HOST}:${PORT}`}`);
 
   if (request.method === "GET" && url.pathname === "/api/health") {
-    sendJson(response, 200, { ok: true, model: MODEL, configured: Boolean(API_KEY) });
+    sendJson(response, 200, {
+      ok: true,
+      model: MODEL,
+      configured: Boolean(API_KEY),
+      keyFormatValid: Boolean(API_KEY) && isAsciiHeaderValue(API_KEY),
+    });
     return;
   }
 
