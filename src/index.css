@@ -454,6 +454,15 @@ input, textarea { font-family: inherit; }
 .player-done { align-items: center; text-align: center; gap: 12px; max-width: 300px; padding: 24px; }
 
 /* ---- AI 对话 ---- */
+.ai-head-tools { display: flex; align-items: center; gap: 10px; }
+.voice-toggle { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--t-tertiary); background: #fff; box-shadow: var(--shadow-xs); transition: transform .18s, color .18s, background .18s, box-shadow .18s; }
+.voice-toggle.on { color: var(--brand-deep); background: var(--blue-soft); box-shadow: 0 0 0 1px rgba(72,183,224,.18), var(--shadow-xs); }
+.voice-toggle.speaking { animation: voicePulse 1.2s ease-in-out infinite; }
+.voice-toggle:active { transform: scale(.94); }
+.voice-status { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: var(--r-pill); background: rgba(255,255,255,.72); color: var(--t-secondary); font-size: 11.5px; font-weight: 700; box-shadow: var(--shadow-xs); }
+.voice-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t-tertiary); flex: none; }
+.voice-dot.on { background: var(--teal); box-shadow: 0 0 0 4px rgba(47,198,173,.14); }
+@keyframes voicePulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(72,183,224,.18), var(--shadow-xs); } 50% { box-shadow: 0 0 0 7px rgba(72,183,224,.13), var(--shadow-soft); } }
 .ai-actions { display: flex; gap: 10px; }
 .ai-actions .btn { box-shadow: none; }
 .ai-chat-body { min-height: 0; overflow: hidden; padding-bottom: 18px; }

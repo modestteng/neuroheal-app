@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarCheck, PhoneCall, Send, ShieldCheck, Sparkle } from "lucide-react";
+import { CalendarCheck, PhoneCall, Send, ShieldCheck, Sparkle, Volume2, VolumeX } from "lucide-react";
 import SubScreen from "../../components/SubScreen";
 import { aiOpening, aiQuickAsks } from "../../data/mock";
+import { useSpeechGuide } from "../../hooks/useSpeechGuide";
 
 type Msg = { id: number; role: "ai" | "me"; text: string };
 type ApiMessage = { role: "assistant" | "user"; content: string };
@@ -25,10 +26,23 @@ export default function AiChatScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const idRef = useRef(1);
   const endRef = useRef<HTMLDivElement>(null);
+  const introSpokenRef = useRef(false);
+  const speech = useSpeechGuide(true);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, typing]);
+
+  useEffect(() => {
+    if (introSpokenRef.current || !speech.enabled) return;
+
+    introSpokenRef.current = true;
+    const timer = window.setTimeout(() => {
+      speech.speak(`你已进入 AI 心理陪伴界面。${aiOpening}`);
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [speech, speech.enabled]);
 
   const send = async (text: string) => {
     const content = text.trim();
@@ -56,9 +70,11 @@ export default function AiChatScreen() {
       }
 
       setMsgs((messages) => [...messages, { id: idRef.current++, role: "ai", text: reply }]);
+      speech.speak(reply);
     } catch (error) {
       console.error(error);
       setMsgs((messages) => [...messages, { id: idRef.current++, role: "ai", text: NETWORK_ERROR_REPLY }]);
+      speech.speak(NETWORK_ERROR_REPLY);
     } finally {
       setTyping(false);
     }
@@ -66,15 +82,44 @@ export default function AiChatScreen() {
 
   const fireToast = (message: string) => {
     setToast(message);
+    speech.speak(message);
     setTimeout(() => setToast(null), 2600);
+  };
+
+  const toggleSpeech = () => {
+    if (!speech.supported) {
+      fireToast("当前浏览器暂不支持语音播报");
+      return;
+    }
+
+    const nextEnabled = !speech.enabled;
+    speech.toggle();
+    fireToast(nextEnabled ? "语音陪伴已开启，小愈会读出回复" : "语音陪伴已关闭");
   };
 
   return (
     <SubScreen
       title="AI 心理陪伴 · 小愈"
       bodyClassName="ai-chat-body"
-      headRight={<Sparkle size={16} color="var(--purple)" />}
+      headRight={
+        <div className="ai-head-tools">
+          <button
+            className={`voice-toggle${speech.enabled ? " on" : ""}${speech.speaking ? " speaking" : ""}`}
+            onClick={toggleSpeech}
+            aria-label={speech.enabled ? "关闭语音陪伴" : "开启语音陪伴"}
+            title={speech.enabled ? "关闭语音陪伴" : "开启语音陪伴"}
+          >
+            {speech.enabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+          </button>
+          <Sparkle size={16} color="var(--purple)" />
+        </div>
+      }
     >
+      <div className="voice-status">
+        <span className={speech.enabled ? "voice-dot on" : "voice-dot"} />
+        {speech.enabled ? (speech.speaking ? "小愈正在轻声播报" : "语音陪伴已开启，AI 回复会自动朗读") : "语音陪伴已关闭，点右上角可开启"}
+      </div>
+
       <div className="ai-actions">
         <button className="btn btn-ghost btn-sm grow" onClick={() => fireToast("已为你预约校心理中心 · 周四 15:00，老师会主动联系你")}>
           <CalendarCheck size={14} /> 预约校心理中心
