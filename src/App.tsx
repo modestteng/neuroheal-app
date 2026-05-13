@@ -27,6 +27,7 @@ import { NavProvider, type SubRoute } from "./nav";
 import type { SubName, TabKey } from "./data/mock";
 import { RaceSessionProvider } from "./game-session";
 import { ShopSessionProvider } from "./shop-session";
+import { useClickSound } from "./hooks/useClickSound";
 
 const SCREENS = {
   home: HomeScreen,
@@ -57,6 +58,8 @@ function renderSub(s: SubRoute) {
 }
 
 export default function App() {
+  useClickSound();
+
   const [tab, setTab] = useState<TabKey>("home");
   const [sub, setSub] = useState<SubRoute | null>(null);
   const Screen = SCREENS[tab];
