@@ -31,7 +31,7 @@ export default function PurchaseCelebration() {
             <div className="purchase-emoji">{purchase.emoji}</div>
             <span className="kicker">兑换成功</span>
             <span className="h2">{purchase.name}</span>
-            <span className="muted">已扣除 {purchase.cost} 心灵积分，奖励已经放进唐同学的账户。</span>
+            <span className="muted">已扣除 {purchase.cost} 心灵积分，奖励已经放进彭同学的账户。</span>
             <div className="purchase-summary">
               <span><CheckCircle2 size={14} /> 余额 {availablePoints.toLocaleString()}</span>
               <span><ShoppingBag size={14} /> 已购 {redeemedIds.length} 件</span>

@@ -42,7 +42,7 @@ export default function LeaderboardScreen() {
               <div className="leaderboard-rank num">{entry.rank}</div>
               <div className="col grow" style={{ gap: 2 }}>
                 <span className="body" style={{ fontWeight: 700 }}>{entry.faculty}</span>
-                <span className="tiny">{currentUser ? "唐同学所在学院" : entry.alias} · 专注力积分</span>
+                <span className="tiny">{currentUser ? "彭同学所在学院" : entry.alias} · 专注力积分</span>
               </div>
               <div className="col" style={{ alignItems: "flex-end", gap: 2 }}>
                 <span className="body num" style={{ fontWeight: 700, color: "var(--brand-deep)" }}>{entry.score.toLocaleString()}</span>

@@ -1,13 +1,13 @@
 // ============ 智愈莘莘 NeuroHeal · mock 数据（无后端，纯演示） ============
 
 export const user = {
-  name: "唐同学",
-  realName: "唐三",
+  name: "彭同学",
+  realName: "彭于晏",
   studentId: "24993039",
   major: "计算机科学与技术",
   className: "2班",
   faculty: "人工智能学院",
-  greeting: "早上好，唐同学 ☀️",
+  greeting: "早上好，彭同学 ☀️",
   soulPoints: 1280,
   level: 4,
   levelName: "守护者",
@@ -209,7 +209,7 @@ export const leaderboardEntries: LeaderboardEntry[] = [
   { id: "sports", faculty: "体育部", alias: "跃场", baseScore: 1742 },
 ];
 
-export const myRank = { id: "ai", name: "你 · 唐同学", faculty: "人工智能学院" };
+export const myRank = { id: "ai", name: "你 · 彭同学", faculty: "人工智能学院" };
 
 export const shopItems = [
   { id: "s1", name: "VIP 冥想课程月卡", cost: 800, emoji: "🧘", tone: "tint-teal", left: "限量 50 份" },
