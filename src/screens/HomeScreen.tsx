@@ -35,7 +35,7 @@ export default function HomeScreen() {
             onClick={() => openSub("profile")}
             aria-label="查看个人资料"
           >
-            <img src="/profile-avatar.png" alt={`${user.name}头像`} />
+            <img src={user.avatar} alt={`${user.name}头像`} />
           </button>
         </div>
       </Reveal>

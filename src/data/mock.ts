@@ -8,6 +8,7 @@ export const user = {
   className: "2班",
   faculty: "人工智能学院",
   greeting: "早上好，彭同学 ☀️",
+  avatar: "/profile-avatar-peng.png",
   soulPoints: 1280,
   level: 4,
   levelName: "守护者",

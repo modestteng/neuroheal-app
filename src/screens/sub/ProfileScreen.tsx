@@ -16,7 +16,7 @@ export default function ProfileScreen() {
       <div className="card profile-hero">
         <div className="row" style={{ gap: 14 }}>
           <div className="profile-avatar">
-            <img src="/profile-avatar.png" alt={`${user.realName}头像`} />
+            <img src={user.avatar} alt={`${user.realName}头像`} />
           </div>
           <div className="col grow" style={{ gap: 3 }}>
             <span className="kicker">学生档案</span>
