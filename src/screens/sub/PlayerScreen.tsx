@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pause, Play, X, Sparkles, RotateCw, Volume2 } from "lucide-react";
+import { Pause, Play, X, RotateCw, Volume2 } from "lucide-react";
 import { useNav } from "../../nav";
-import { breathPlayer } from "../../data/mock";
+import { breathPlayer, type ClosedLoopRecord } from "../../data/mock";
+import { useValenceLoop } from "../../state/useValenceLoop";
 
 type Phase = "inhale" | "hold" | "exhale";
 const LABEL: Record<Phase, string> = { inhale: "吸 气", hold: "屏 息", exhale: "呼 气" };
@@ -14,14 +15,26 @@ function fmt(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-export default function PlayerScreen({ from }: { from?: string }) {
+export default function PlayerScreen({ from, actionId, actionTitle }: { from?: string; actionId?: string; actionTitle?: string }) {
   const { closeSub } = useNav();
+  const { startIntervention, completeIntervention, resume } = useValenceLoop();
   const total = breathPlayer.totalSec;
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<Phase>("inhale");
   const [playing, setPlaying] = useState(true);
   const [done, setDone] = useState(false);
+  const [loopRecord, setLoopRecord] = useState<ClosedLoopRecord | null>(null);
   const phaseIdx = useRef(0);
+  const sessionStartedRef = useRef(false);
+  const resolvedTitle = actionTitle ?? from ?? breathPlayer.title;
+  const resolvedActionId = actionId ?? (resolvedTitle.includes("考研") ? "prescription-focus" : "breath-alpha");
+
+  useEffect(() => {
+    if (sessionStartedRef.current) return;
+    sessionStartedRef.current = true;
+    startIntervention(resolvedActionId, resolvedTitle);
+    return () => resume();
+  }, [resolvedActionId, resolvedTitle, resume, startIntervention]);
 
   // progress (accelerated for demo: ~22s to finish)
   useEffect(() => {
@@ -55,13 +68,34 @@ export default function PlayerScreen({ from }: { from?: string }) {
   const scale = phase === "inhale" ? 1.18 : phase === "exhale" ? 0.72 : 1.18;
   const dur = phase === "inhale" ? 4 : phase === "exhale" ? 8 : 0.2;
 
-  const restart = () => { setElapsed(0); setDone(false); setPlaying(true); phaseIdx.current = 0; };
+  useEffect(() => {
+    if (!done || loopRecord) return;
+    const scoreGain = 10 + Math.round((relax - 62) / 4);
+    const record = completeIntervention({
+      actionId: resolvedActionId,
+      actionTitle: resolvedTitle,
+      durationSec: Math.round(elapsed),
+      metrics: { relax },
+      afterScoreDelta: scoreGain,
+      aiMessage: `${resolvedTitle}已完成，放松度达到 ${relax}%，系统将继续进行 EEG 再监测。`,
+    });
+    setLoopRecord(record);
+  }, [completeIntervention, done, elapsed, loopRecord, relax, resolvedActionId, resolvedTitle]);
+
+  const restart = () => {
+    setElapsed(0);
+    setDone(false);
+    setLoopRecord(null);
+    setPlaying(true);
+    phaseIdx.current = 0;
+    startIntervention(resolvedActionId, resolvedTitle);
+  };
 
   return (
     <div className="sub-screen player-screen">
       <div className="sub-header" style={{ background: "transparent", borderBottom: "none" }}>
         <button className="sub-back" onClick={closeSub} aria-label="关闭"><X size={20} color="var(--t-primary)" /></button>
-        <span className="sub-title">{from ?? breathPlayer.title}</span>
+        <span className="sub-title">{resolvedTitle}</span>
         <div className="sub-head-right"><Volume2 size={18} color="var(--t-tertiary)" /></div>
       </div>
 
@@ -111,8 +145,21 @@ export default function PlayerScreen({ from }: { from?: string }) {
             <motion.div className="card player-done" initial={{ scale: 0.9, y: 16 }} animate={{ scale: 1, y: 0 }} transition={{ type: "spring", stiffness: 280, damping: 22 }}>
               <div style={{ fontSize: 40 }}>🌟</div>
               <span className="h1">训练完成！</span>
-              <span className="muted" style={{ textAlign: "center" }}>放松度提升 <b style={{ color: "var(--teal-deep)" }}>↑26</b>，副交感神经更活跃了。</span>
-              <div className="chip amber" style={{ fontSize: 13, padding: "8px 14px" }}><Sparkles size={14} /> +{breathPlayer.reward} 心灵积分</div>
+              <span className="muted" style={{ textAlign: "center" }}>放松度提升 <b style={{ color: "var(--teal-deep)" }}>↑26</b>，副交感神经更活跃了。本次训练已写入成长档案。</span>
+              {loopRecord && (
+                <div className="before-after-grid" style={{ width: "100%" }}>
+                  <div>
+                    <span>干预前</span>
+                    <strong>{loopRecord.beforeScore}</strong>
+                    <em>{loopRecord.beforeLevel}</em>
+                  </div>
+                  <div>
+                    <span>干预后</span>
+                    <strong>{loopRecord.afterScore}</strong>
+                    <em>{loopRecord.afterLevel} · {loopRecord.delta >= 0 ? "+" : ""}{loopRecord.delta}</em>
+                  </div>
+                </div>
+              )}
               <div className="row" style={{ gap: 10, width: "100%" }}>
                 <button className="btn btn-ghost grow" onClick={restart}>再来一组</button>
                 <button className="btn btn-primary grow" onClick={closeSub}>完成</button>

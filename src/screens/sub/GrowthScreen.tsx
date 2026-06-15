@@ -107,7 +107,7 @@ export default function GrowthScreen() {
           </div>
           <div className="report-trends">
             {[
-              { label: "情绪指数", data: weeklyReport.mood, color: "var(--brand)", id: "g-mood" },
+              { label: "Valence 趋势", data: weeklyReport.mood, color: "var(--brand)", id: "g-mood" },
               { label: "专注度", data: weeklyReport.focus, color: "var(--focus)", id: "g-focus" },
               { label: "压力值", data: weeklyReport.stress, color: "var(--stress)", id: "g-stress" },
             ].map((t) => (

@@ -1,6 +1,6 @@
-# 智愈莘莘 NeuroHeal
+# 智愈莘莘 NeuroHeal 脑电情绪监测与干预反馈系统 V1.0
 
-面向高校学生的脑电情绪监测与心理健康干预演示应用。项目包含：
+面向高校学生的 EEG 脑电信号实时监测、Valence 情绪效价识别与 AI 反馈干预闭环演示系统。系统主线为“EEG 采集 -> Valence 识别 -> AI 反馈 -> 干预推荐 -> 再监测”。项目包含：
 
 - React + TypeScript + Vite 前端
 - DeepSeek AI 陪聊后端代理

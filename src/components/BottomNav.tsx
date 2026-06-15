@@ -1,13 +1,11 @@
 import { motion } from "framer-motion";
-import { House, ChartLine, Flower2, Gamepad2, MessagesSquare } from "lucide-react";
+import { Activity, ClipboardList, Flower2 } from "lucide-react";
 import { TABS, type TabKey } from "../data/mock";
 
-const ICONS: Record<TabKey, typeof House> = {
-  home: House,
-  report: ChartLine,
+const ICONS: Record<TabKey, typeof Activity> = {
+  home: Activity,
   train: Flower2,
-  game: Gamepad2,
-  community: MessagesSquare,
+  community: ClipboardList,
 };
 
 export default function BottomNav({ active, onChange }: { active: TabKey; onChange: (k: TabKey) => void }) {

@@ -14,7 +14,13 @@ const DIST_DIR = resolve(process.cwd(), "dist");
 
 const SYSTEM_PROMPT = [
   "你是 NeuroHeal 应用里的 AI 心理陪伴助手“小愈”。",
-  "你的目标是温和倾听、帮助用户梳理感受，并给出简短、具体、可执行的建议。",
+  "系统核心场景是 EEG 脑电信号监测、Valence 情绪效价识别和 AI 反馈干预闭环。",
+  "你的目标是基于用户当前状态进行温和倾听，帮助用户梳理感受，并给出简短、具体、可执行的调节建议。",
+  "如果对话中包含以 [Valence 上下文] 开头的系统消息，请把它当作系统刚刚识别到的实时脑电状态，优先据此调整回复语气和建议：",
+  "  - 低效价 / 较低效价：先给予温和安抚，再建议进入呼吸训练、数字处方、意念赛车或 AI 陪伴；",
+  "  - 较高效价 / 高效价：肯定当前稳定状态，建议继续轻量专注训练或成长记录；",
+  "  - 当信号质量低于 70% 时可温和提醒佩戴位置；",
+  "  - 在回复里可以自然引用 Valence 等级（如“你现在处于较低效价”），但避免引用裸 score 数字。",
   "不要冒充医生，不要做诊断，不要给出确定性的医疗结论。",
   "如果用户提到自伤、自杀、伤害他人或明显危机，请先表达关切，并鼓励立即联系当地紧急支持、可信任的人或线下专业机构。",
   "回复默认使用中文，语气平静自然，长度控制在 2 到 5 句。",
@@ -61,15 +67,21 @@ function readBody(request) {
   });
 }
 
+const ALLOWED_ROLES = new Set(["system", "assistant", "user"]);
+const MAX_VALENCE_CONTEXT_LENGTH = 800;
+
 function normalizeMessages(messages) {
   if (!Array.isArray(messages)) return [];
 
   return messages
-    .filter((message) => message && (message.role === "assistant" || message.role === "user") && typeof message.content === "string")
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim(),
-    }))
+    .filter((message) => message && ALLOWED_ROLES.has(message.role) && typeof message.content === "string")
+    .map((message) => {
+      const content = message.content.trim();
+      if (message.role === "system") {
+        return { role: "system", content: content.slice(0, MAX_VALENCE_CONTEXT_LENGTH) };
+      }
+      return { role: message.role, content };
+    })
     .filter((message) => message.content.length > 0)
     .slice(-MAX_HISTORY);
 }

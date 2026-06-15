@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarCheck, PhoneCall, Send, ShieldCheck, Sparkle, Volume2, VolumeX } from "lucide-react";
 import SubScreen from "../../components/SubScreen";
-import { aiOpening, aiQuickAsks } from "../../data/mock";
+import { aiOpening, aiQuickAsks, interventionActions } from "../../data/mock";
 import { useSpeechGuide } from "../../hooks/useSpeechGuide";
+import { useValenceLoop } from "../../state/useValenceLoop";
 
 type Msg = { id: number; role: "ai" | "me"; text: string };
-type ApiMessage = { role: "assistant" | "user"; content: string };
+type ApiMessage = { role: "system" | "assistant" | "user"; content: string };
 type ChatResponse = { reply?: string; error?: string };
 
 const CHAT_HISTORY_LIMIT = 12;
@@ -28,6 +29,8 @@ export default function AiChatScreen() {
   const endRef = useRef<HTMLDivElement>(null);
   const introSpokenRef = useRef(false);
   const speech = useSpeechGuide(true);
+  const { current } = useValenceLoop();
+  const currentIntervention = interventionActions.find((item) => item.id === current.recommendedActionId) ?? interventionActions[0];
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -55,11 +58,16 @@ export default function AiChatScreen() {
     setInput("");
     setTyping(true);
 
+    const valenceContext: ApiMessage = {
+      role: "system",
+      content: `[Valence 上下文] 等级=${current.level}；score=${current.score}/100；置信度=${current.confidence}%；信号质量=${current.signalQuality}%；EEG 摘要=${current.eegSummary}`,
+    };
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: toApiMessages(nextMsgs) }),
+        body: JSON.stringify({ messages: [valenceContext, ...toApiMessages(nextMsgs)] }),
       });
 
       const data = await response.json() as ChatResponse;
@@ -118,6 +126,20 @@ export default function AiChatScreen() {
       <div className="voice-status">
         <span className={speech.enabled ? "voice-dot on" : "voice-dot"} />
         {speech.enabled ? (speech.speaking ? "小愈正在轻声播报" : "语音陪伴已开启，AI 回复会自动朗读") : "语音陪伴已关闭，点右上角可开启"}
+      </div>
+
+      <div className="card ai-context-card">
+        <div className="row between top">
+          <div className="col">
+            <span className="tiny">当前 Valence 状态</span>
+            <span className="title">{current.level} · {current.score}</span>
+          </div>
+          <span className="chip teal">置信度 {current.confidence}%</span>
+        </div>
+        <span className="muted">{current.eegSummary}</span>
+        <div className="ai-context-action">
+          <span>AI 推荐：{currentIntervention.title}</span>
+        </div>
       </div>
 
       <div className="ai-actions">

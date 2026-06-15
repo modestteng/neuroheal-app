@@ -18,9 +18,9 @@ export default defineConfig(({ mode }) => {
               registerType: 'autoUpdate',
               includeAssets: ['icon.svg'],
               manifest: {
-                name: '智愈莘莘 NeuroHeal',
+                name: '智愈莘莘 NeuroHeal 脑电情绪监测与干预反馈系统',
                 short_name: 'NeuroHeal',
-                description: '面向高校学生的脑电情绪监测与心理健康干预 App',
+                description: '基于 EEG 脑电信号的实时情绪识别与 AI 反馈干预闭环系统（V1.0）',
                 theme_color: '#4fb6e6',
                 background_color: '#f1f8fc',
                 display: 'standalone',
