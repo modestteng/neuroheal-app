@@ -1220,9 +1220,10 @@ body { background: var(--grad-page); }
   flex: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
-  padding-right: 14px;
-  animation: marketTicker 18s linear infinite;
+  min-width: 100%;
+  animation: marketTicker 17s linear infinite, tickerFadeIn 0.7s ease-out both;
 }
 .market-ticker:hover .market-ticker-track {
   animation-play-state: paused;
@@ -1254,6 +1255,10 @@ body { background: var(--grad-page); }
 @keyframes marketTicker {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); }
+}
+@keyframes tickerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .compact-loop-panel {
