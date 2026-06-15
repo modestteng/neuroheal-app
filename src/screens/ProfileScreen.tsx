@@ -242,7 +242,11 @@ export default function ProfileScreen() {
                   />
                 </svg>
                 <div className="profile-avatar-inner">
-                  <UserCircle2 size={32} color="#fff" strokeWidth={1.5} />
+                  <span style={{ fontSize: isEnglish ? 17 : 26, fontWeight: 900, color: "#fff", letterSpacing: "-0.5px", lineHeight: 1, userSelect: "none" }}>
+                    {isEnglish
+                      ? user.nameEn.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+                      : user.name[0]}
+                  </span>
                 </div>
               </div>
               <div className="col" style={{ gap: 4, minWidth: 0 }}>
@@ -263,13 +267,12 @@ export default function ProfileScreen() {
             </button>
           </div>
 
-          <div className="profile-school-row">
-            <img src={user.schoolLogo} alt={displaySchool} className="profile-school-logo" />
-            <div className="col" style={{ gap: 1, minWidth: 0 }}>
-              <span>{displaySchool}</span>
-              <small>{displayCollege} · {user.studentId}</small>
+          <div className="row" style={{ gap: 8, alignItems: "center", background: "rgba(255,255,255,.14)", borderRadius: 12, padding: "8px 12px" }}>
+            <div className="col grow" style={{ gap: 2, minWidth: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{displaySchool}</span>
+              <span style={{ fontSize: 11.5, color: "rgba(255,255,255,.65)" }}>{displayCollege} · {user.studentId}</span>
             </div>
-            <ShieldCheck size={15} color="var(--teal-deep)" />
+            <ShieldCheck size={14} color="rgba(255,255,255,.75)" />
           </div>
 
           <div className="col" style={{ gap: 5 }}>
