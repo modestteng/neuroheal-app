@@ -35,7 +35,7 @@ export default function FocusSessionScreen({ title, goal }: { title?: string; go
   const [distractions, setDistractions] = useState(0);
   const [focusScore, setFocusScore] = useState(72);
   const [loopRecord, setLoopRecord] = useState<ClosedLoopRecord | null>(null);
-  const [review, setReview] = useState<{ averageFocus: number; finalScore: number; practicedSec: number } | null>(null);
+  const [review, setReview] = useState<{ averageFocus: number; finalScore: number; practicedSec: number; distractions: number } | null>(null);
   const finishedRef = useRef(false);
   const elapsedRef = useRef(0);
   const distractionsRef = useRef(0);
@@ -81,7 +81,7 @@ export default function FocusSessionScreen({ title, goal }: { title?: string; go
     });
 
     setLoopRecord(record);
-    setReview({ averageFocus, finalScore, practicedSec });
+    setReview({ averageFocus, finalScore, practicedSec, distractions: distractionsRef.current });
     setPhase("summary");
   }, [completeIntervention, resolvedGoal, resolvedTitle]);
 
@@ -229,7 +229,7 @@ export default function FocusSessionScreen({ title, goal }: { title?: string; go
                 <div><span>完成目标</span><strong>{resolvedGoal}</strong></div>
                 <div><span>有效专注</span><strong className="num">{fmt(review.practicedSec)}</strong></div>
                 <div><span>平均专注</span><strong className="num">{review.averageFocus}%</strong></div>
-                <div><span>走神次数</span><strong className="num">{distractionsRef.current}</strong></div>
+                <div><span>走神次数</span><strong className="num">{review.distractions}</strong></div>
               </div>
 
               <div className="focus-ai-note">

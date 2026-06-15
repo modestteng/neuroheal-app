@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause, Play, X, RotateCw, Volume2 } from "lucide-react";
 import { useNav } from "../../nav";
@@ -26,8 +26,27 @@ export default function PlayerScreen({ from, actionId, actionTitle }: { from?: s
   const [loopRecord, setLoopRecord] = useState<ClosedLoopRecord | null>(null);
   const phaseIdx = useRef(0);
   const sessionStartedRef = useRef(false);
+  const completedRef = useRef(false);
   const resolvedTitle = actionTitle ?? from ?? breathPlayer.title;
   const resolvedActionId = actionId ?? (resolvedTitle.includes("考研") ? "prescription-focus" : "breath-alpha");
+
+  const completeSession = useCallback((finalElapsed: number) => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    const finalRelax = Math.round(62 + 26 * (finalElapsed / total));
+    const scoreGain = 10 + Math.round((finalRelax - 62) / 4);
+    const record = completeIntervention({
+      actionId: resolvedActionId,
+      actionTitle: resolvedTitle,
+      durationSec: Math.round(finalElapsed),
+      metrics: { relax: finalRelax },
+      afterScoreDelta: scoreGain,
+      aiMessage: `${resolvedTitle}已完成，放松度达到 ${finalRelax}%，系统将继续进行 EEG 再监测。`,
+    });
+    setLoopRecord(record);
+    setDone(true);
+    setPlaying(false);
+  }, [completeIntervention, resolvedActionId, resolvedTitle, total]);
 
   useEffect(() => {
     if (sessionStartedRef.current) return;
@@ -42,12 +61,15 @@ export default function PlayerScreen({ from, actionId, actionTitle }: { from?: s
     const id = setInterval(() => {
       setElapsed((e) => {
         const n = e + total * 0.011;
-        if (n >= total) { setDone(true); return total; }
+        if (n >= total) {
+          window.setTimeout(() => completeSession(total), 0);
+          return total;
+        }
         return n;
       });
     }, 240);
     return () => clearInterval(id);
-  }, [playing, done, total]);
+  }, [completeSession, playing, done, total]);
 
   // breathing phase cycle (real 4-7-8 timing)
   useEffect(() => {
@@ -68,21 +90,8 @@ export default function PlayerScreen({ from, actionId, actionTitle }: { from?: s
   const scale = phase === "inhale" ? 1.18 : phase === "exhale" ? 0.72 : 1.18;
   const dur = phase === "inhale" ? 4 : phase === "exhale" ? 8 : 0.2;
 
-  useEffect(() => {
-    if (!done || loopRecord) return;
-    const scoreGain = 10 + Math.round((relax - 62) / 4);
-    const record = completeIntervention({
-      actionId: resolvedActionId,
-      actionTitle: resolvedTitle,
-      durationSec: Math.round(elapsed),
-      metrics: { relax },
-      afterScoreDelta: scoreGain,
-      aiMessage: `${resolvedTitle}已完成，放松度达到 ${relax}%，系统将继续进行 EEG 再监测。`,
-    });
-    setLoopRecord(record);
-  }, [completeIntervention, done, elapsed, loopRecord, relax, resolvedActionId, resolvedTitle]);
-
   const restart = () => {
+    completedRef.current = false;
     setElapsed(0);
     setDone(false);
     setLoopRecord(null);
@@ -134,7 +143,7 @@ export default function PlayerScreen({ from, actionId, actionTitle }: { from?: s
         <div className="row" style={{ gap: 16, marginTop: 4 }}>
           <button className="player-btn ghost" onClick={restart}><RotateCw size={18} /></button>
           <button className="player-btn main" onClick={() => setPlaying((p) => !p)}>{playing ? <Pause size={24} fill="#fff" /> : <Play size={24} fill="#fff" />}</button>
-          <button className="player-btn ghost" onClick={() => setDone(true)}><span style={{ fontSize: 11, fontWeight: 700 }}>结束</span></button>
+          <button className="player-btn ghost" onClick={() => completeSession(Math.max(1, elapsed))}><span style={{ fontSize: 11, fontWeight: 700 }}>结束</span></button>
         </div>
         <span className="tiny" style={{ textAlign: "center", maxWidth: 260 }}>跟随光圈：慢慢吸气 4 秒、屏息 7 秒、缓缓呼气 8 秒。把注意力放在呼吸上就好。</span>
       </div>

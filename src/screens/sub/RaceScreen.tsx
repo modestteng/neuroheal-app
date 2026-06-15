@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp, Flag, Gauge, RotateCcw, Sparkles, Timer, X } from "lucide-react";
+import { Activity, ChevronDown, ChevronUp, Flag, Gauge, RotateCcw, Timer, X } from "lucide-react";
 import { type ClosedLoopRecord } from "../../data/mock";
 import { useRaceSession, type RaceRoundResult } from "../../game-session";
 import { useNav } from "../../nav";
 import { useValenceLoop } from "../../state/useValenceLoop";
+import { Chip } from "../../components/ui";
 
 type RacePhase = "ready" | "countdown" | "running" | "summary";
 type MarkerType = "focus" | "boost" | "noise";
@@ -67,7 +68,7 @@ function markerText(type: MarkerType) {
 export default function RaceScreen({ actionId, actionTitle }: { actionId?: string; actionTitle?: string }) {
   const { closeSub } = useNav();
   const { recordRound } = useRaceSession();
-  const { startIntervention, completeIntervention, resume } = useValenceLoop();
+  const { startIntervention, completeIntervention, resume, current } = useValenceLoop();
   const resolvedActionId = actionId ?? "race-focus";
   const resolvedTitle = actionTitle ?? "意念赛车专注调节";
 
@@ -316,7 +317,8 @@ export default function RaceScreen({ actionId, actionTitle }: { actionId?: strin
     setPhase("countdown");
   };
 
-  const focusLabel = focus >= 84 ? "心流冲刺" : focus >= 62 ? "稳定推进" : "调整呼吸";
+  const focusLabel = focus >= 84 ? "心流冲刺 · α↑β↑" : focus >= 62 ? "稳定推进 · α 活跃" : "调整呼吸 · 信号波动";
+  const focusColor = focus >= 80 ? "var(--teal)" : focus >= 60 ? "var(--brand)" : focus >= 42 ? "var(--joy)" : "var(--stress)";
   const progressPct = clamp((distance / FINISH_DISTANCE) * 100, 0, 100);
   const rivalProgress = clamp(20 + ((ROUND_SECONDS * 1000 - remainingMs) / (ROUND_SECONDS * 1000)) * 64, 20, 84);
   const activeMarkers = useMemo(
@@ -331,7 +333,7 @@ export default function RaceScreen({ actionId, actionTitle }: { actionId?: strin
           <X size={20} color="var(--t-primary)" />
         </button>
         <span className="sub-title">意念赛车 · 专注换道赛</span>
-        <div className="sub-head-right"><Sparkles size={17} color="var(--brand-deep)" /></div>
+        <div className="sub-head-right"><Chip variant="teal"><Activity size={12} /> EEG 驱动</Chip></div>
       </div>
 
       <div className="race-body">
@@ -388,14 +390,18 @@ export default function RaceScreen({ actionId, actionTitle }: { actionId?: strin
 
           <div className="race-progress-row">
             <span>赛程</span>
-            <div className="race-focus-bar"><i style={{ width: `${progressPct}%` }} /></div>
-            <strong className="num">{Math.round(progressPct)}%</strong>
+            <div className="race-focus-bar"><i style={{ width: `${progressPct}%`, background: focusColor }} /></div>
+            <strong className="num" style={{ color: focusColor }}>{Math.round(progressPct)}%</strong>
           </div>
 
           <div className="race-metrics">
             <div className="race-metric">
-              <span className="tiny">当前专注</span>
-              <strong className="num">{Math.round(focus)}%</strong>
+              <span className="tiny">专注稳定度</span>
+              <strong className="num" style={{ color: focusColor }}>{Math.round(focus)}%</strong>
+            </div>
+            <div className="race-metric">
+              <span className="tiny">脑波置信度</span>
+              <strong className="num">{current.confidence}%</strong>
             </div>
             <div className="race-metric">
               <span className="tiny">已行驶</span>
@@ -406,21 +412,30 @@ export default function RaceScreen({ actionId, actionTitle }: { actionId?: strin
 
         {phase === "ready" && (
           <div className="card race-panel">
-            <div className="row top">
-              <div className="icon-badge shadow" style={{ background: "#fff", width: 44, height: 44 }}>
-                <Gauge size={20} color="var(--brand-deep)" />
+            <div className="row top" style={{ gap: 12 }}>
+              <div className="icon-badge" style={{ background: "var(--teal-soft)", width: 44, height: 44, flex: "none" }}>
+                <Gauge size={20} color="var(--teal-deep)" />
               </div>
-              <div className="col grow" style={{ gap: 3 }}>
-                <span className="body" style={{ fontWeight: 700 }}>换道收集专注点</span>
-                <span className="muted">上/下换道，按住蓄力。收集“专”和“冲”，避开“扰”，让赛车在 30 秒内尽量跑远。</span>
+              <div className="col grow" style={{ gap: 4 }}>
+                <span className="body" style={{ fontWeight: 800 }}>用注意力驾驶赛车</span>
+                <span className="muted">上/下换道，按住蓄力。EEG Alpha/Beta 信号驱动专注度，专注越高赛车跑越远。</span>
               </div>
             </div>
             <div className="race-rule-grid">
-              <span>专：专注 +8</span>
-              <span>冲：奖励加速</span>
-              <span>扰：专注下降</span>
+              <span className="rule-focus">
+                <strong style={{ fontSize: 16 }}>专</strong>
+                专注 +8
+              </span>
+              <span className="rule-boost">
+                <strong style={{ fontSize: 16 }}>冲</strong>
+                加速奖励
+              </span>
+              <span className="rule-noise">
+                <strong style={{ fontSize: 16 }}>扰</strong>
+                干扰下降
+              </span>
             </div>
-            <button className="btn btn-primary btn-block" onClick={beginCountdown}>开始挑战</button>
+            <button className="btn btn-primary btn-block" onClick={beginCountdown}>开始 30 秒挑战</button>
           </div>
         )}
 

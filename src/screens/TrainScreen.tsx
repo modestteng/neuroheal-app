@@ -13,8 +13,10 @@ export default function TrainScreen() {
     [current.recommendedActionId],
   );
   const quickActions = useMemo(
-    () => interventionActions.filter((action) => action.id === "breath-alpha" || action.id === "race-focus"),
-    [],
+    () => interventionActions.filter(
+      (action) => (action.id === "breath-alpha" || action.id === "race-focus") && action.id !== current.recommendedActionId
+    ),
+    [current.recommendedActionId],
   );
   const aiCompanionAction = useMemo(
     () => interventionActions.find((action) => action.id === "ai-care"),

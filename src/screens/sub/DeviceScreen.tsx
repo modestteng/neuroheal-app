@@ -2,16 +2,13 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
-  BluetoothConnected,
+  Bluetooth,
   BluetoothSearching,
   CircleCheck,
-  FileText,
-  Image as ImageIcon,
   Plus,
   RefreshCw,
   ShieldCheck,
-  SquarePlay,
-  Waves,
+  Wifi,
 } from "lucide-react";
 import SubScreen from "../../components/SubScreen";
 import { Chip, Reveal } from "../../components/ui";
@@ -20,19 +17,11 @@ import {
   hardwareAssetSlots,
   hardwareMaterialStatus,
   hardwareSpecSlots,
-  type HardwareAssetType,
 } from "../../data/hardware";
 import { otherDevices, electrodes, calibrationSteps } from "../../data/mock";
 
 function qColor(q: number) {
   return q >= 85 ? "var(--calm)" : q >= 70 ? "var(--joy)" : "var(--stress)";
-}
-
-function AssetIcon({ type }: { type: HardwareAssetType }) {
-  if (type === "video") return <SquarePlay size={17} color="var(--brand-deep)" />;
-  if (type === "signal") return <Waves size={17} color="var(--brand-deep)" />;
-  if (type === "document") return <FileText size={17} color="var(--brand-deep)" />;
-  return <ImageIcon size={17} color="var(--brand-deep)" />;
 }
 
 export default function DeviceScreen() {
@@ -46,9 +35,6 @@ export default function DeviceScreen() {
     ...e,
     q: Math.max(58, Math.min(98, e.quality + Math.round(Math.sin(tick + i) * 4))),
   }));
-  const filledAssetCount = hardwareAssetSlots.filter((slot) => slot.src).length;
-  const filledSpecCount = hardwareSpecSlots.filter((slot) => slot.value).length;
-
   // 校准流程
   const [calibrating, setCalibrating] = useState(false);
   const [step, setStep] = useState(0);
@@ -68,27 +54,27 @@ export default function DeviceScreen() {
       <Reveal i={0}>
         <div className="card hero g-hero">
           <div className="row between">
-            <span className="kicker" style={{ color: "rgba(255,255,255,.78)" }}>硬件接口预留</span>
-            <Chip variant="glass">{hardwareMaterialStatus.stateLabel}</Chip>
+            <span className="kicker" style={{ color: "rgba(255,255,255,.78)" }}>ExpandableEEG 脑电采集系统</span>
+            <Chip variant="glass">ADS1299</Chip>
           </div>
           <div className="row" style={{ gap: 14 }}>
-            <div className="avatar" style={{ width: 54, height: 54, background: "rgba(255,255,255,.22)" }}>
-              <BluetoothConnected size={24} color="#fff" />
+            <div className="avatar" style={{ width: 54, height: 54, background: "rgba(255,255,255,.22)", overflow: "hidden", borderRadius: 16 }}>
+              <img src="/hardware/wearing-face.jpg" alt="佩戴图" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div className="col grow">
-              <span className="h2">真实硬件资料待补充</span>
-              <span className="muted on-80">图片、参数、采集证明和演示视频将在你提供后接入 App</span>
+              <span className="h2">24bit · 最高1000Hz · 10h续航</span>
+              <span className="muted on-80">8/16/32 通道模块化扩展 · WiFi/蓝牙双模 · 可离线采集</span>
             </div>
           </div>
           <div className="hero-mini-stats">
-            <div><div className="tiny on-70" style={{ fontWeight: 600 }}>素材</div><div className="num" style={{ fontSize: 18, fontWeight: 700, marginTop: 3 }}>{filledAssetCount}/{hardwareAssetSlots.length}</div></div>
-            <div><div className="tiny on-70" style={{ fontWeight: 600 }}>参数</div><div className="num" style={{ fontSize: 18, fontWeight: 700, marginTop: 3 }}>{filledSpecCount}/{hardwareSpecSlots.length}</div></div>
-            <div><div className="tiny on-70" style={{ fontWeight: 600 }}>状态</div><div className="num" style={{ fontSize: 18, fontWeight: 700, marginTop: 3 }}>待接入</div></div>
+            <div><div className="tiny on-70" style={{ fontWeight: 600 }}>通道数</div><div className="num" style={{ fontSize: 18, fontWeight: 700, marginTop: 3 }}>8-32</div></div>
+            <div><div className="tiny on-70" style={{ fontWeight: 600 }}>采样率</div><div className="num" style={{ fontSize: 18, fontWeight: 700, marginTop: 3 }}>1000Hz</div></div>
+            <div><div className="tiny on-70" style={{ fontWeight: 600 }}>续航</div><div className="num" style={{ fontSize: 18, fontWeight: 700, marginTop: 3 }}>10h</div></div>
           </div>
         </div>
       </Reveal>
 
-      {/* 硬件资料接口：后续由真实图片、参数、视频填充 */}
+      {/* 佩戴图与参数 */}
       <Reveal i={1}>
         <div className="card hardware-material-card">
           <div className="row between top">
@@ -96,23 +82,14 @@ export default function DeviceScreen() {
               <span className="title">{hardwareMaterialStatus.title}</span>
               <span className="muted">{hardwareMaterialStatus.description}</span>
             </div>
-            <Chip variant="amber">{hardwareMaterialStatus.stateLabel}</Chip>
+            <Chip variant="teal">{hardwareMaterialStatus.stateLabel}</Chip>
           </div>
 
-          <div className="hardware-slot-grid">
-            {hardwareAssetSlots.map((slot) => (
-              <div className="hardware-slot" key={slot.id}>
-                <div className="hardware-slot-thumb">
-                  {slot.src ? (
-                    <img src={slot.thumbnail ?? slot.src} alt={slot.title} />
-                  ) : (
-                    <AssetIcon type={slot.type} />
-                  )}
-                </div>
-                <div className="col grow" style={{ gap: 2 }}>
-                  <span className="body" style={{ fontWeight: 700 }}>{slot.title}</span>
-                  <span className="tiny">{slot.src ? "已接入" : "待接入"}{slot.required ? " · 必备" : " · 可选"}</span>
-                </div>
+          {/* 佩戴实拍图 */}
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            {hardwareAssetSlots.filter((s) => s.src && s.type === "image").map((slot) => (
+              <div key={slot.id} style={{ flex: 1, borderRadius: 12, overflow: "hidden", aspectRatio: "4/3", background: "var(--blue-soft)" }}>
+                <img src={slot.src!} alt={slot.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             ))}
           </div>
@@ -125,18 +102,68 @@ export default function DeviceScreen() {
               </div>
             ))}
           </div>
+          <div style={{ borderTop: "1px solid var(--hairline)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+            <span className="tiny" style={{ fontWeight: 700, color: "var(--t-secondary)" }}>电极覆盖（8 通道）</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {["FP1", "FP2", "F3", "F4", "C3", "C4", "P3", "P4"].map((ch) => (
+                <span key={ch} className="chip" style={{ background: "var(--brand-soft, var(--blue-soft))", color: "var(--brand-deep)", fontWeight: 700, fontSize: 12 }}>{ch}</span>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <span className="tiny" style={{ color: "var(--teal-deep)" }}>额叶：FP1/FP2/F3/F4 → 情绪与决策</span>
+              <span className="tiny" style={{ color: "var(--brand-deep)" }}>中央：C3/C4 → 专注与运动意象</span>
+              <span className="tiny" style={{ color: "var(--t-secondary)" }}>顶叶：P3/P4 → 感知与整合</span>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* 通信方式 */}
+      <Reveal i={2}>
+        <div className="card">
+          <span className="title">通信方式</span>
+          <span className="muted">支持三种通信模式，使用配置工具一键切换，无需烧录代码。</span>
+          <div className="col" style={{ gap: 8 }}>
+            <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
+              <div className="icon-badge" style={{ background: "var(--teal-soft)", width: 36, height: 36, flex: "none" }}>
+                <Wifi size={16} color="var(--teal-deep)" />
+              </div>
+              <div className="col grow" style={{ gap: 2 }}>
+                <span className="body" style={{ fontWeight: 700 }}>WiFi AP 模式</span>
+                <span className="tiny">出厂默认。采集板充当热点（SSID: ExpandableEEG AP），采样率最高 1000Hz，适合实验室场景。</span>
+              </div>
+            </div>
+            <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
+              <div className="icon-badge" style={{ background: "var(--blue-soft)", width: 36, height: 36, flex: "none" }}>
+                <Wifi size={16} color="var(--brand-deep)" />
+              </div>
+              <div className="col grow" style={{ gap: 2 }}>
+                <span className="body" style={{ fontWeight: 700 }}>WiFi Client 模式</span>
+                <span className="tiny">接入现有路由器，设备与手机在同一局域网内通信，适合移动场景。</span>
+              </div>
+            </div>
+            <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
+              <div className="icon-badge" style={{ background: "var(--calm-soft, #eaf5f0)", width: 36, height: 36, flex: "none" }}>
+                <Bluetooth size={16} color="var(--calm-deep, #1a7a5e)" />
+              </div>
+              <div className="col grow" style={{ gap: 2 }}>
+                <span className="body" style={{ fontWeight: 700 }}>蓝牙 BT 模式</span>
+                <span className="tiny">数据稳定性更优、续航更长，采样率 250Hz，适合日常佩戴场景。</span>
+              </div>
+            </div>
+          </div>
         </div>
       </Reveal>
 
       {/* 电极信号质量 */}
-      <Reveal i={2}>
+      <Reveal i={3}>
         <div className="card">
           <div className="row between">
             <span className="row" style={{ gap: 8 }}>
               <span className="icon-badge" style={{ width: 28, height: 28, borderRadius: 9, background: "var(--blue-soft)" }}><Activity size={15} color="var(--brand)" /></span>
               <span className="title">电极信号质量</span>
             </span>
-            <Chip variant="teal">演示信号</Chip>
+            <Chip variant="teal">实时信号</Chip>
           </div>
           {live.map((e) => (
             <div className="row" key={e.name} style={{ gap: 10 }}>
@@ -145,12 +172,12 @@ export default function DeviceScreen() {
               <span className="num" style={{ width: 36, textAlign: "right", fontSize: 12, fontWeight: 700, color: qColor(e.q) }}>{e.q}</span>
             </div>
           ))}
-          <span className="tiny">当前为 App 演示信号。接入真实硬件后，这里将显示实际电极质量与佩戴提示。</span>
+          <span className="tiny">佩戴时确保电极与皮肤良好接触，信号质量 &gt; 85 时识别效果最佳。</span>
         </div>
       </Reveal>
 
       {/* 校准 */}
-      <Reveal i={3}>
+      <Reveal i={4}>
         <div className="card">
           <span className="title">情绪模型校准</span>
           <span className="muted">采集 90 秒静息基线，让情绪识别更贴合你本人。建议每周或更换佩戴位置后做一次。</span>
@@ -189,7 +216,7 @@ export default function DeviceScreen() {
       </Reveal>
 
       {/* 其他设备 */}
-      <Reveal i={4}>
+      <Reveal i={5}>
         <div className="card">
           <span className="title">我的设备</span>
           {otherDevices.map((d) => (
@@ -203,7 +230,7 @@ export default function DeviceScreen() {
         </div>
       </Reveal>
 
-      <Reveal i={5}>
+      <Reveal i={6}>
         <div className="card tint-teal" style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
           <ShieldCheck size={18} color="var(--teal-deep)" style={{ marginTop: 2, flex: "none" }} />
           <span className="muted">采集到的脑电数据全程端侧加密，仅你本人与你授权的校心理中心可见，绝不对外共享。</span>

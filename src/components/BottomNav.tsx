@@ -1,14 +1,24 @@
 import { motion } from "framer-motion";
-import { Activity, ClipboardList, Flower2 } from "lucide-react";
+import { Activity, ClipboardList, Flower2, UserCircle2 } from "lucide-react";
 import { TABS, type TabKey } from "../data/mock";
+import { useLanguage } from "../state/useLanguage";
 
 const ICONS: Record<TabKey, typeof Activity> = {
   home: Activity,
   train: Flower2,
   community: ClipboardList,
+  profile: UserCircle2,
 };
 
 export default function BottomNav({ active, onChange }: { active: TabKey; onChange: (k: TabKey) => void }) {
+  const { isEnglish } = useLanguage();
+  const labels: Record<TabKey, string> = {
+    home: isEnglish ? "Monitor" : "监测",
+    train: isEnglish ? "Intervene" : "干预",
+    community: isEnglish ? "Records" : "记录",
+    profile: isEnglish ? "Profile" : "我的",
+  };
+
   return (
     <nav className="bottom-nav">
       {TABS.map((t) => {
@@ -20,7 +30,7 @@ export default function BottomNav({ active, onChange }: { active: TabKey; onChan
             <motion.span className="nav-icon-wrap" animate={{ scale: isActive ? 1.04 : 0.92 }} transition={{ type: "spring", stiffness: 420, damping: 22 }}>
               <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
             </motion.span>
-            <span className="nav-label">{t.label}</span>
+            <span className="nav-label">{labels[t.key] ?? t.label}</span>
           </button>
         );
       })}

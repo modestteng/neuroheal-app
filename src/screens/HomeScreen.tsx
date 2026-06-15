@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import {
   ChevronRight,
@@ -6,7 +6,6 @@ import {
   Loader2,
   MessageCircleHeart,
   Radio,
-  ShieldCheck,
   Sparkles,
   Waves,
 } from "lucide-react";
@@ -19,7 +18,6 @@ import {
   loopSteps,
   type ValenceLevel,
 } from "../data/mock";
-import { appMarketMetrics, appMarketOverview, displayMarketValue } from "../data/metrics";
 
 const LEVEL_TO_STEP: Record<ValenceLevel, number> = {
   低效价: 0,
@@ -89,29 +87,26 @@ function LoopFlow({ activeStep }: { activeStep: number }) {
 }
 
 function TopStatusTicker({ signalQuality }: { signalQuality: number }) {
-  const items = appMarketMetrics.map((metric) => `${metric.label} ${displayMarketValue(metric)}`);
-
   return (
-    <div className="market-ticker" aria-label={`${appMarketOverview.appName} 状态与市场接受度数据`}>
+    <div className="market-ticker" aria-label="ExpandableEEG 硬件状态">
       {[0, 1].map((round) => (
         <div className="market-ticker-track" key={round} aria-hidden={round === 1}>
-          <span>硬件资料待接入</span>
-          <strong>演示信号 {signalQuality}%</strong>
-          <span>{appMarketOverview.appName}</span>
-          {items.map((item) => (
-            <strong key={`${round}-${item}`}>{item}</strong>
-          ))}
+          <span>ExpandableEEG · 24bit · ADS1299</span>
+          <strong>EEG 信号 {signalQuality}%</strong>
+          <span>8 通道 · 最高 1000Hz</span>
+          <strong>WiFi AP / BT 双模</strong>
+          <span>ADS1299 · ≤1μVpp 噪声</span>
         </div>
       ))}
     </div>
   );
 }
 
-function eegForLevel(level: ValenceLevel) {
+function eegForLevel(level: ValenceLevel, phase = 0) {
   const amplitude = level === "低效价" ? 36 : level === "较低效价" ? 28 : level === "较高效价" ? 18 : 12;
   return eegLive.map((point) => ({
     t: point.t,
-    v: 50 + Math.round(amplitude * Math.sin(point.t / 1.7) + (amplitude / 3) * Math.sin(point.t / 0.6)),
+    v: 50 + Math.round(amplitude * Math.sin((point.t + phase) / 1.7) + (amplitude / 3) * Math.sin((point.t + phase) / 0.6)),
   }));
 }
 
@@ -123,7 +118,12 @@ export default function HomeScreen() {
     () => interventionActions.find((item) => item.id === current.recommendedActionId) ?? interventionActions[0],
     [current.recommendedActionId],
   );
-  const eegData = useMemo(() => eegForLevel(current.level), [current.level]);
+  const [eegPhase, setEegPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setEegPhase((p) => p + 0.35), 80);
+    return () => clearInterval(id);
+  }, []);
+  const eegData = useMemo(() => eegForLevel(current.level, eegPhase), [current.level, eegPhase]);
   const activeStep = loading ? 2 : LEVEL_TO_STEP[current.level];
   const mood = useMemo(() => getValenceMood(current.level, current.score), [current.level, current.score]);
 
@@ -192,7 +192,15 @@ export default function HomeScreen() {
             </div>
           </div>
 
-          <div className="monitor-eeg-panel">
+          <div className="compact-loop-panel">
+            <LoopFlow activeStep={activeStep} />
+          </div>
+        </div>
+      </Reveal>
+
+      <Reveal i={3}>
+        <div className="card">
+          <div className="monitor-eeg-panel" style={{ borderTop: "none", paddingTop: 0 }}>
             <div className="row between">
               <span className="row" style={{ gap: 8 }}>
                 <Waves size={16} color={mood.chartColor} />
@@ -200,11 +208,11 @@ export default function HomeScreen() {
               </span>
               <button
                 className="chip"
-                style={{ background: "var(--blue-soft)", cursor: "pointer" }}
+                style={{ background: "var(--teal-soft)", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
                 onClick={() => openSub("device")}
                 aria-label="打开设备与校准"
               >
-                硬件资料待补充
+                ExpandableEEG · 查看硬件 <ChevronRight size={12} />
               </button>
             </div>
             <div className="chart-box sm">
@@ -252,14 +260,6 @@ export default function HomeScreen() {
             <button className="btn btn-primary" onClick={() => openSub(intervention.route, { ...(intervention.params ?? {}), actionId: intervention.id, actionTitle: intervention.title })}>
               开始 <ChevronRight size={16} />
             </button>
-          </div>
-
-          <div className="compact-loop-panel">
-            <LoopFlow activeStep={activeStep} />
-            <div className="row" style={{ gap: 8 }}>
-              <ShieldCheck size={15} color="var(--teal-deep)" />
-              <span className="tiny">采集 → 识别 → 反馈 → 干预 → 再监测</span>
-            </div>
           </div>
         </div>
       </Reveal>

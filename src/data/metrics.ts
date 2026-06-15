@@ -18,9 +18,9 @@ export type AppMarketMetric = {
 
 export const appMarketOverview = {
   appName: "智愈 APP",
-  title: "市场接受度",
-  stateLabel: "模拟展示数据",
-  note: "当前为比赛演示用模拟数据，后续可替换为应用商店、下载页、后台统计或试点机构记录。",
+  title: "平台概览",
+  stateLabel: "模拟演示数据",
+  note: "当前为模拟演示数据，后续可替换为应用商店、下载页、后台统计或试点机构记录。",
 };
 
 export const appMarketMetrics: AppMarketMetric[] = [
@@ -29,8 +29,8 @@ export const appMarketMetrics: AppMarketMetric[] = [
     label: "APP 下载量",
     value: "12860",
     unit: "次",
-    description: "用于证明产品触达规模。",
-    source: "模拟展示数据",
+    description: "全平台累计下载安装量。",
+    source: "模拟演示数据",
     status: "演示数据",
   },
   {
@@ -38,8 +38,8 @@ export const appMarketMetrics: AppMarketMetric[] = [
     label: "注册用户数",
     value: "4320",
     unit: "人",
-    description: "用于证明用户转化和注册意愿。",
-    source: "模拟展示数据",
+    description: "完成注册并激活的用户总数。",
+    source: "模拟演示数据",
     status: "演示数据",
   },
   {
@@ -47,8 +47,8 @@ export const appMarketMetrics: AppMarketMetric[] = [
     label: "累计训练次数",
     value: "18750",
     unit: "次",
-    description: "用于证明用户使用深度。",
-    source: "模拟展示数据",
+    description: "全平台呼吸训练、专注赛车等干预完成次数。",
+    source: "模拟演示数据",
     status: "演示数据",
   },
   {
@@ -56,8 +56,8 @@ export const appMarketMetrics: AppMarketMetric[] = [
     label: "试点学校数",
     value: "6",
     unit: "所",
-    description: "用于证明校园落地情况。",
-    source: "模拟展示数据",
+    description: "已接入心理中心并开展试点的高校数量。",
+    source: "模拟演示数据",
     status: "演示数据",
   },
 ];

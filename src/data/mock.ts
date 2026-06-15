@@ -1,9 +1,21 @@
 // ============ 智愈莘莘 NeuroHeal · mock 数据（无后端，纯演示） ============
 
 export const user = {
-  name: "测试用户",
+  name: "林七夜",
+  nameEn: "Lin Qiye",
+  schoolName: "安徽农业大学",
+  schoolNameEn: "Anhui Agricultural University",
+  schoolLogo: "/school/ahau-logo.png",
+  college: "人工智能学院",
+  collegeEn: "School of Artificial Intelligence",
+  studentId: "24115299",
+  advisorName: "董寅冬老师",
+  advisorNameEn: "Advisor Dong Yindong",
+  affiliatedInstitution: "安徽农业大学心理健康中心",
+  affiliatedInstitutionEn: "Anhui Agricultural University Mental Health Center",
   level: 4,
   levelName: "守护者",
+  levelNameEn: "Guardian",
 };
 
 export const device = {
@@ -185,11 +197,12 @@ export const dailyTask = {
 };
 
 // 底部导航
-export type TabKey = "home" | "train" | "community";
+export type TabKey = "home" | "train" | "community" | "profile";
 export const TABS: { key: TabKey; label: string }[] = [
   { key: "home", label: "监测" },
   { key: "train", label: "干预" },
   { key: "community", label: "记录" },
+  { key: "profile", label: "我的" },
 ];
 
 /* ============ 子页面：设备配对与脑电校准 ============ */
@@ -313,4 +326,6 @@ export type SubName =
   | "aichat"
   | "growth"
   | "race"
-  | "focusSession";
+  | "focusSession"
+  | "profileBundle"
+  | "profileDetail";
