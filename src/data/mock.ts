@@ -51,6 +51,7 @@ export type InterventionAction = {
 
 export type ClosedLoopRecord = {
   id: string;
+  createdAt?: string;
   startTime: string;
   beforeLevel: ValenceLevel;
   beforeScore: number;
@@ -59,6 +60,7 @@ export type ClosedLoopRecord = {
   afterLevel: ValenceLevel;
   afterScore: number;
   delta: number;
+  durationSec?: number;
   status: "已完成" | "进行中";
 };
 

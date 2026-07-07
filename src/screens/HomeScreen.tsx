@@ -86,16 +86,34 @@ function LoopFlow({ activeStep }: { activeStep: number }) {
   );
 }
 
-function TopStatusTicker({ signalQuality }: { signalQuality: number }) {
+const QUOTES: { text: string; author: string }[] = [
+  { text: "会当击水三千里，自信人生二百年", author: "毛泽东" },
+  { text: "长风破浪会有时，直挂云帆济沧海", author: "李白" },
+  { text: "天行健，君子以自强不息", author: "《周易》" },
+  { text: "路漫漫其修远兮，吾将上下而求索", author: "屈原" },
+  { text: "千磨万击还坚劲，任尔东西南北风", author: "郑板桥" },
+  { text: "莫道桑榆晚，为霞尚满天", author: "刘禹锡" },
+  { text: "不积跬步，无以至千里", author: "荀子" },
+  { text: "业精于勤，荒于嬉；行成于思，毁于随", author: "韩愈" },
+  { text: "宝剑锋从磨砺出，梅花香自苦寒来", author: "古训" },
+  { text: "志不强者智不达", author: "墨子" },
+];
+
+function TopStatusTicker() {
+  const [quoteIdx, setQuoteIdx] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setQuoteIdx((i) => (i + 1) % QUOTES.length), 10000);
+    return () => clearInterval(id);
+  }, []);
+
+  const { text, author } = QUOTES[quoteIdx];
   return (
-    <div className="market-ticker" aria-label="ExpandableEEG 硬件状态">
+    <div className="market-ticker" aria-label="励志名言">
       {[0, 1].map((round) => (
-        <div className="market-ticker-track" key={round} aria-hidden={round === 1}>
-          <span>ExpandableEEG · 24bit · ADS1299</span>
-          <strong>EEG 信号 {signalQuality}%</strong>
-          <span>8 通道 · 最高 1000Hz</span>
-          <strong>WiFi AP / BT 双模</strong>
-          <span>ADS1299 · ≤1μVpp 噪声</span>
+        <div className="market-ticker-track" key={`${quoteIdx}-${round}`} aria-hidden={round === 1}>
+          <strong>{text}</strong>
+          <em>{author}</em>
         </div>
       ))}
     </div>
@@ -144,7 +162,7 @@ export default function HomeScreen() {
       </Reveal>
 
       <Reveal i={1}>
-        <TopStatusTicker signalQuality={current.signalQuality} />
+        <TopStatusTicker />
       </Reveal>
 
       <Reveal i={2}>

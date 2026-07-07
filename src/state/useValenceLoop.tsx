@@ -35,9 +35,29 @@ export type CompleteInterventionInput = {
   aiMessage?: string;
 };
 
+export type EmotionRecordSource = "monitor" | "intervention" | "checkin";
+
+export type EmotionRecord = {
+  id: string;
+  timestamp: string;
+  time: string;
+  score: number;
+  level: ValenceLevel;
+  confidence: number;
+  signalQuality: number;
+  eegSummary: string;
+  source: EmotionRecordSource;
+  action?: string;
+  beforeScore?: number;
+  afterScore?: number;
+  delta?: number;
+  aiMessage?: string;
+};
+
 type LoopState = {
   current: ValenceSnapshot;
   history: ValenceSnapshot[];
+  emotionRecords: EmotionRecord[];
   loopRecords: ClosedLoopRecord[];
   activeIntervention: ActiveIntervention | null;
   isLive: boolean;
@@ -54,10 +74,17 @@ const Ctx = createContext<LoopState | null>(null);
 
 const TICK_MS = 9000;
 const HISTORY_LIMIT = 8;
+const ARCHIVE_LIMIT = 260;
+const EMOTION_ARCHIVE_KEY = "neuroheal.emotionArchive.v1";
+const LOOP_RECORDS_KEY = "neuroheal.loopRecords.v1";
 
 function nowHHMM(): string {
   const date = new Date();
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
 }
 
 function jitter(snapshot: ValenceSnapshot, salt: number): ValenceSnapshot {
@@ -77,6 +104,125 @@ function clampScore(score: number) {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+function makeRecordId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function timestampForDay(day: Date, hour: number, minute: number) {
+  const value = new Date(day);
+  value.setHours(hour, minute, 0, 0);
+  return value.toISOString();
+}
+
+function toEmotionRecord(
+  snapshot: ValenceSnapshot,
+  source: EmotionRecordSource,
+  extra: Partial<EmotionRecord> = {},
+): EmotionRecord {
+  const timestamp = extra.timestamp ?? nowIso();
+  return {
+    id: extra.id ?? makeRecordId(source),
+    timestamp,
+    time: snapshot.time,
+    score: snapshot.score,
+    level: snapshot.level,
+    confidence: snapshot.confidence,
+    signalQuality: snapshot.signalQuality,
+    eegSummary: snapshot.eegSummary,
+    source,
+    action: extra.action,
+    beforeScore: extra.beforeScore,
+    afterScore: extra.afterScore,
+    delta: extra.delta,
+    aiMessage: extra.aiMessage,
+  };
+}
+
+function addEmotionRecord(records: EmotionRecord[], record: EmotionRecord) {
+  const exists = records.some((item) => item.id === record.id);
+  const next = exists ? records : [record, ...records];
+  return next
+    .slice()
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, ARCHIVE_LIMIT);
+}
+
+function readStorage<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) as T : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage<T>(key: string, value: T) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // 本地隐私归档失败时不阻断实时监测演示。
+  }
+}
+
+function makeDemoEmotionRecords(): EmotionRecord[] {
+  const dailyScores = [
+    [62, 68, 66],
+    [58, 61, 71],
+    [48, 56, 64],
+    [70, 73, 75],
+    [54, 66, 69],
+    [63, 72, 76],
+    [42, 57, 64],
+  ];
+  const labels = ["晨间基线", "午后再监测", "晚间复盘"];
+  const hours = [8, 14, 21];
+  const today = new Date();
+
+  return dailyScores.flatMap((scores, dayIndex) => {
+    const day = new Date(today);
+    day.setDate(today.getDate() - (dailyScores.length - 1 - dayIndex));
+
+    return scores.map((score, pointIndex) => {
+      const timestamp = timestampForDay(day, hours[pointIndex], pointIndex === 1 ? 26 : 12);
+      const isInterventionPoint = (dayIndex === 2 || dayIndex === dailyScores.length - 1) && pointIndex === 1;
+      const level = scoreToLevel(score);
+      return {
+        id: `seed-${dayIndex}-${pointIndex}-${timestamp.slice(0, 10)}`,
+        timestamp,
+        time: `${String(hours[pointIndex]).padStart(2, "0")}:${pointIndex === 1 ? "26" : "12"}`,
+        score,
+        level,
+        confidence: 88 + ((dayIndex + pointIndex) % 8),
+        signalQuality: 90 + ((dayIndex + pointIndex) % 6),
+        eegSummary: isInterventionPoint
+          ? "干预后 Alpha 波占比回升，Valence 较干预前明显改善。"
+          : `${labels[pointIndex]}显示 Valence 处于${level}区间，已写入个人情绪轨迹。`,
+        source: isInterventionPoint ? "intervention" : "monitor",
+        action: isInterventionPoint
+          ? (dayIndex === dailyScores.length - 1 ? "3 分钟 Alpha 呼吸调节" : "意念赛车专注调节")
+          : undefined,
+        beforeScore: isInterventionPoint ? score - (dayIndex === dailyScores.length - 1 ? 15 : 8) : undefined,
+        afterScore: isInterventionPoint ? score : undefined,
+        delta: isInterventionPoint ? (dayIndex === dailyScores.length - 1 ? 15 : 8) : undefined,
+        aiMessage: isInterventionPoint ? "系统已完成一次干预前后对比，并将结果纳入本周情绪报告。" : undefined,
+      } satisfies EmotionRecord;
+    });
+  }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
+function loadEmotionRecords() {
+  const stored = readStorage<EmotionRecord[]>(EMOTION_ARCHIVE_KEY);
+  if (Array.isArray(stored) && stored.length > 0) return stored.slice(0, ARCHIVE_LIMIT);
+  return makeDemoEmotionRecords();
+}
+
+function loadLoopRecords() {
+  const stored = readStorage<ClosedLoopRecord[]>(LOOP_RECORDS_KEY);
+  return Array.isArray(stored) ? stored.slice(0, 12) : [];
+}
+
 export function ValenceLoopProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState(0);
   const [tick, setTick] = useState(0);
@@ -85,9 +231,11 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
   const [lastAiReply, setLastAiReply] = useState<string | null>(null);
   const [currentOverride, setCurrentOverride] = useState<ValenceSnapshot | null>(null);
   const [activeIntervention, setActiveIntervention] = useState<ActiveIntervention | null>(null);
-  const [dynamicRecords, setDynamicRecords] = useState<ClosedLoopRecord[]>([]);
+  const [dynamicRecords, setDynamicRecords] = useState<ClosedLoopRecord[]>(loadLoopRecords);
+  const [emotionRecords, setEmotionRecords] = useState<EmotionRecord[]>(loadEmotionRecords);
   const historyRef = useRef<ValenceSnapshot[]>([]);
   const activeRef = useRef<ActiveIntervention | null>(null);
+  const lastRecordedRef = useRef<string | null>(null);
   const [history, setHistory] = useState<ValenceSnapshot[]>([]);
 
   useEffect(() => {
@@ -107,7 +255,20 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     historyRef.current = [current, ...historyRef.current].slice(0, HISTORY_LIMIT);
     setHistory(historyRef.current);
+
+    const recordKey = `${current.id}-${current.time}-${current.score}-${current.level}`;
+    if (lastRecordedRef.current === recordKey) return;
+    lastRecordedRef.current = recordKey;
+    setEmotionRecords((records) => addEmotionRecord(records, toEmotionRecord(current, "monitor")));
   }, [current]);
+
+  useEffect(() => {
+    writeStorage(EMOTION_ARCHIVE_KEY, emotionRecords);
+  }, [emotionRecords]);
+
+  useEffect(() => {
+    writeStorage(LOOP_RECORDS_KEY, dynamicRecords);
+  }, [dynamicRecords]);
 
   const pause = useCallback(() => setIsLive(false), []);
   const resume = useCallback(() => setIsLive(true), []);
@@ -144,9 +305,11 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
     const durationNote = input.durationSec ? `用时 ${Math.round(input.durationSec)} 秒，` : "";
     const aiMessage = input.aiMessage
       ?? `${actionTitle}已完成，${durationNote}${metricNote}系统将继续进行 EEG 再监测。`;
+    const completedAt = nowIso();
 
     const record: ClosedLoopRecord = {
       id: `loop-dynamic-${Date.now()}`,
+      createdAt: completedAt,
       startTime: active?.startedAt ?? nowHHMM(),
       beforeLevel: before.level,
       beforeScore: before.score,
@@ -155,6 +318,7 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
       afterLevel,
       afterScore,
       delta,
+      durationSec: input.durationSec,
       status: "已完成",
     };
 
@@ -175,6 +339,16 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
     activeRef.current = null;
     setActiveIntervention(null);
     setDynamicRecords((records) => [record, ...records].slice(0, 12));
+    lastRecordedRef.current = `${snapshot.id}-${snapshot.time}-${snapshot.score}-${snapshot.level}`;
+    setEmotionRecords((records) => addEmotionRecord(records, toEmotionRecord(snapshot, "intervention", {
+      id: `emotion-${record.id}`,
+      timestamp: completedAt,
+      action: actionTitle,
+      beforeScore: before.score,
+      afterScore,
+      delta,
+      aiMessage,
+    })));
     setCurrentOverride(snapshot);
     setLastAiReply(aiMessage);
     setIsLive(true);
@@ -223,6 +397,7 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
     () => ({
       current,
       history,
+      emotionRecords,
       loopRecords,
       activeIntervention,
       isLive,
@@ -237,6 +412,7 @@ export function ValenceLoopProvider({ children }: { children: ReactNode }) {
     [
       current,
       history,
+      emotionRecords,
       loopRecords,
       activeIntervention,
       isLive,
