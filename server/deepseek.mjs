@@ -170,7 +170,18 @@ function serveStatic(request, response, pathname) {
 
   const extension = extname(assetPath);
   const contentType = CONTENT_TYPES[extension] || "application/octet-stream";
-  const cacheControl = assetPath.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable";
+  const normalizedAssetPath = assetPath.replace(/\\/g, "/");
+  const fileName = normalizedAssetPath.split("/").pop() || "";
+  const isEntryOrPwaFile =
+    fileName === "index.html" ||
+    fileName === "sw.js" ||
+    fileName === "registerSW.js" ||
+    fileName === "manifest.webmanifest" ||
+    /^workbox-.*\.js$/.test(fileName);
+  const isHashedBuildAsset = normalizedAssetPath.includes("/assets/");
+  const cacheControl = isEntryOrPwaFile || !isHashedBuildAsset
+    ? "no-cache, must-revalidate"
+    : "public, max-age=31536000, immutable";
 
   response.writeHead(200, {
     "Content-Type": contentType,
